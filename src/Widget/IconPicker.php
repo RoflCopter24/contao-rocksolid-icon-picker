@@ -34,28 +34,35 @@ class IconPicker extends \Widget
 	{
 		$assetsDir = 'bundles/rocksolidiconpicker';
 
+		$rootDir = \System::getContainer()->getParameter('kernel.project_dir');
 		$GLOBALS['TL_JAVASCRIPT'][] = $assetsDir . '/js/be_main.js';
 		$GLOBALS['TL_CSS'][] = $assetsDir . '/css/be_main.css';
 		$this->loadLanguageFile('rocksolid_icon_picker');
 
 		$fontPath = $GLOBALS['TL_DCA'][$this->strTable]['fields'][$this->strField]['eval']['iconFont'];
-		$fontPathNoSuffix = implode('.', explode('.', $fontPath, -1));
+		$fontPathPrefixSvg = $GLOBALS['TL_DCA'][$this->strTable]['fields'][$this->strField]['eval']['iconFontPathPrefixSvg'];
+		$fontPathPrefixFont = $GLOBALS['TL_DCA'][$this->strTable]['fields'][$this->strField]['eval']['iconFontPathPrefixFont'];
 
 		// Strip web directory prefix
 		if ($webDir = \System::getContainer()->getParameter('contao.web_dir')) {
 			$webDir = \StringUtil::stripRootDir($webDir);
-		}
-		else {
+		} else {
 			$webDir = 'web';
 		}
-		$fontPathNoSuffix = preg_replace('(^'.preg_quote($webDir).'/)', '', $fontPathNoSuffix);
 
-		if (!file_exists(TL_ROOT . '/' . $fontPath)) {
-			return '<p class="tl_gerror"><strong>'
-				. sprintf($GLOBALS['TL_LANG']['rocksolid_icon_picker']['font_not_found'], $fontPath)
-				. '</strong></p>';
+		if (!file_exists($rootDir . '/' . $fontPath)) {
+
+			// If the file does not exists directly, maybe contao knows about it?
+			$fontAssetPath = 'web/' . IconPicker::findAsset($fontPath);
+			if (!file_exists($rootDir . '/' . $fontAssetPath)) {
+				return '<p class="tl_gerror"><strong>'
+					. sprintf($GLOBALS['TL_LANG']['rocksolid_icon_picker']['font_not_found'], $fontPath)
+					. '</strong></p>';
+			}
 		}
 
+		$fontPathNoSuffix = implode('.', explode('.', $fontPath, -1));
+		$fontPathNoSuffix = preg_replace('(^' . preg_quote($webDir) . '/)', '', $fontPathNoSuffix);
 		// IE does not support font names longer than 31 characters
 		$fontFamily = substr('rip_font_' . md5($fontPath), 0, 31);
 
@@ -132,15 +139,16 @@ class IconPicker extends \Widget
 
 		$html .= '})();</script>';
 		*/
+		$fontPathNoPrefix = str_replace($fontPathPrefixSvg, $fontPathPrefixFont, $fontPathNoSuffix);
 
 		$html .= '<style>';
 		$html .= '@font-face {';
 		$html .= '	font-family: ' . $fontFamily . ';';
-		$html .= '	src: url(\'' . $fontPathNoSuffix . '.eot\');';
-		$html .= '	src: url(\'' . $fontPathNoSuffix . '.eot?#iefix\') format(\'embedded-opentype\'),';
-		$html .= '	     url(\'' . $fontPathNoSuffix . '.woff\') format(\'woff\'),';
-		$html .= '	     url(\'' . $fontPathNoSuffix . '.ttf\') format(\'truetype\'),';
-		$html .= '	     url(\'' . $fontPathNoSuffix . '.svg#svg_fontregular\') format(\'svg\');';
+		$html .= '	src: url(\'' . IconPicker::findAsset($fontPathNoPrefix . '.eot') . '\');';
+		$html .= '	src: url(\'' . IconPicker::findAsset($fontPathNoPrefix . '.eot') . '?#iefix\') format(\'embedded-opentype\'),';
+		$html .= '	     url(\'' . IconPicker::findAsset($fontPathNoPrefix . '.woff') . '\') format(\'woff\'),';
+		$html .= '	     url(\'' . IconPicker::findAsset($fontPathNoPrefix . '.ttf') . '\') format(\'truetype\'),';
+		$html .= '	     url(\'' . IconPicker::findAsset($fontPathNoSuffix . '.svg') . '#svg_fontregular\') format(\'svg\');';
 		$html .= '	font-weight: normal;';
 		$html .= '	font-style: normal;';
 		$html .= '}';
@@ -158,15 +166,16 @@ class IconPicker extends \Widget
 	 */
 	public static function getCacheDirPaths()
 	{
+		$rootDir = \System::getContainer()->getParameter('kernel.project_dir');
 		$cacheDir = \System::getContainer()->getParameter('kernel.cache_dir') . '/contao';
 
 		$dirFullPath = $cacheDir . '/rocksolid_icon_picker';
 		$dirPath = $dirFullPath;
 		if (
-			substr($dirPath, 0, strlen(TL_ROOT) + 1) === TL_ROOT . '/'
-			|| substr($dirPath, 0, strlen(TL_ROOT) + 1) === TL_ROOT . '\\'
+			substr($dirPath, 0, strlen($rootDir) + 1) === $rootDir . '/'
+			|| substr($dirPath, 0, strlen($rootDir) + 1) === $rootDir . '\\'
 		) {
-			$dirPath = substr($dirPath, strlen(TL_ROOT) + 1);
+			$dirPath = substr($dirPath, strlen($rootDir) + 1);
 		}
 
 		return array(
@@ -183,16 +192,22 @@ class IconPicker extends \Widget
 	 */
 	static public function getIconsFromFont($fontPath)
 	{
-		if (!$fontPath || !file_exists(TL_ROOT . '/' . $fontPath)) {
-			return array();
+		$rootDir = \System::getContainer()->getParameter('kernel.project_dir');
+
+		$fontRealPath = 'web/' . IconPicker::findAsset($fontPath);
+		if (!$fontPath || !file_exists($rootDir . '/' . $fontPath)) {
+			if (!file_exists($rootDir . '/' . $fontRealPath)) {
+				return [];
+			}
+			$fontPath = $fontRealPath;
 		}
 
 		// calculate the cache key
-		$cacheKey = md5_file(TL_ROOT . '/' . $fontPath);
-		if (file_exists($infoFilePath = TL_ROOT . '/' . substr($fontPath, 0, -4) . '.html')) {
+		$cacheKey = md5_file($rootDir . '/' . $fontPath);
+		if (file_exists($infoFilePath = $rootDir . '/' . substr($fontPath, 0, -4) . '.html')) {
 			$cacheKey = md5($cacheKey . md5_file($infoFilePath));
 		}
-		if (file_exists($infoFilePath = TL_ROOT . '/' . substr($fontPath, 0, -4) . '.css')) {
+		if (file_exists($infoFilePath = $rootDir . '/' . substr($fontPath, 0, -4) . '.css')) {
 			$cacheKey = md5($cacheKey . md5_file($infoFilePath));
 		}
 		$cacheDirPaths = static::getCacheDirPaths();
@@ -202,8 +217,8 @@ class IconPicker extends \Widget
 			return include $cacheFileFullPath;
 		}
 
-		$font = new \SimpleXMLElement(TL_ROOT . '/' . $fontPath, null, true);
-		if(
+		$font = new \SimpleXMLElement($rootDir . '/' . $fontPath, null, true);
+		if (
 			!isset($font->defs[0]->font[0]->glyph) ||
 			!count($font->defs[0]->font[0]->glyph)
 		) {
@@ -217,26 +232,25 @@ class IconPicker extends \Widget
 			if ($xmlGlyph['unicode']) {
 
 				$glyph = array();
-				$char = (string)$xmlGlyph['unicode'];
+				$char = (string) $xmlGlyph['unicode'];
 
 				$unicode = unpack('N', mb_convert_encoding($char, 'UCS-4BE', 'UTF-8'));
 				$glyph['code'] = dechex($unicode[1]);
 
-				if(isset($xmlGlyph['glyph-name'])){
-					$glyph['name'] = (string)$xmlGlyph['glyph-name'];
+				if (isset($xmlGlyph['glyph-name'])) {
+					$glyph['name'] = (string) $xmlGlyph['glyph-name'];
 				}
 
 				// ignore white space and control characters
-				if (hexdec($glyph['code']) > 32 && !empty($xmlGlyph['d']) && (string)$xmlGlyph['d'] !== 'M0 0v0v0v0v0z') {
+				if (hexdec($glyph['code']) > 32 && !empty($xmlGlyph['d']) && (string) $xmlGlyph['d'] !== 'M0 0v0v0v0v0z') {
 					$glyphs[] = $glyph;
 				}
 			}
-
 		}
 
 		if (
-			file_exists($infoFilePath = TL_ROOT . '/' . substr($fontPath, 0, -4) . '.html') ||
-			file_exists($infoFilePath = TL_ROOT . '/' . substr($fontPath, 0, -4) . '.css')
+			file_exists($infoFilePath = $rootDir . '/' . substr($fontPath, 0, -4) . '.html') ||
+			file_exists($infoFilePath = $rootDir . '/' . substr($fontPath, 0, -4) . '.css')
 		) {
 
 			$infoFileContents = file_get_contents($infoFilePath);
@@ -254,7 +268,7 @@ class IconPicker extends \Widget
 				)
 			) {
 
-				$iconNames = array_combine(array_map(function($key) {
+				$iconNames = array_combine(array_map(function ($key) {
 					if (substr($key, 0, 3) === '&#x') {
 						return rtrim(substr($key, 3), ';');
 					}
@@ -262,12 +276,12 @@ class IconPicker extends \Widget
 						return substr($key, 1);
 					}
 					if (mb_strlen($key, 'UTF-8') === 1) {
-						return ltrim(implode('',
+						return ltrim(implode(
+							'',
 							unpack('H*', mb_convert_encoding($key, 'UCS-4BE', 'UTF-8'))
 						), '0');
 					}
 					return '';
-
 				}, $matches['key']), $matches['value']);
 
 				$iconNames = array_map('trim', preg_replace(
@@ -282,9 +296,7 @@ class IconPicker extends \Widget
 							. $iconNames[$glyph['code']];
 					}
 				}
-
 			}
-
 		}
 
 		$cacheFile = new \File($cacheFilePath, true);
@@ -310,5 +322,21 @@ class IconPicker extends \Widget
 				}
 			}
 		}
+	}
+
+	/**
+	 * Return the actual public path of an asset from
+	 * the symfony system
+	 *
+	 * @param string $path
+	 * @param string $packageName
+	 * @return string
+	 */
+	protected static function findAsset(string $path, string $packageName = null): string
+	{
+		$url = \System::getContainer()->get('assets.packages')->getUrl($path, $packageName);
+
+		// Contao paths are relative to the <base> tag, so remove leading slashes
+		return ltrim($url, '/');
 	}
 }
