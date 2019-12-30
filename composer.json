@@ -1,42 +1,46 @@
 {
-	"name":"madeyourday/contao-rocksolid-icon-picker",
-	"description":"RockSolid Icon Picker Contao Extension.",
-	"keywords":["contao","icons","widget"],
-	"type":"contao-bundle",
-	"homepage":"https://rocksolidthemes.com/de/contao/plugins/custom-content-elements",
-	"license":"MIT",
-	"authors":[
-		{
-			"name":"RockSolid Themes",
-			"homepage":"https://rocksolidthemes.com/de/contao-themes",
-			"role":"Developer"
-		}
-	],
-	"support":{
-		"forum":"http://help.rocksolidthemes.com/discussions/contao",
-		"issues":"https://github.com/madeyourday/contao-rocksolid-icon-picker/issues",
-		"source":"https://github.com/madeyourday/contao-rocksolid-icon-picker"
-	},
-	"require":{
-		"php":">=5.5",
-		"contao/core-bundle":"^4.3"
-	},
-	"require-dev": {
-		"contao/manager-plugin": "^2.0"
-	},
-	"conflict": {
-		"contao/core": "*",
-		"contao/manager-plugin": "<2.0 || >=3.0"
-	},
-	"autoload":{
-		"psr-4": {
-			"MadeYourDay\\RockSolidIconPicker\\": "src/"
-		}
-	},
-	"extra": {
-		"contao-manager-plugin": "MadeYourDay\\RockSolidIconPicker\\ContaoManagerPlugin"
-	},
-	"replace":{
-		"contao-legacy/rocksolid-icon-picker":"self.version"
-	}
+    "name": "roflcopter24/contao-rocksolid-icon-picker",
+    "description": "RockSolid Icon Picker Contao Extension with Contao asset support.",
+    "keywords": [
+        "contao",
+        "icons",
+        "widget"
+    ],
+    "type": "contao-bundle",
+    "homepage": "https://rocksolidthemes.com/de/contao/plugins/custom-content-elements",
+    "license": "MIT",
+    "authors": [
+        {
+            "name": "RockSolid Themes",
+            "homepage": "https://rocksolidthemes.com/de/contao-themes",
+            "role": "Developer"
+        }
+    ],
+    "support": {
+        "forum": "http://help.rocksolidthemes.com/discussions/contao",
+        "issues": "https://github.com/madeyourday/contao-rocksolid-icon-picker/issues",
+        "source": "https://github.com/madeyourday/contao-rocksolid-icon-picker"
+    },
+    "require": {
+        "php": ">=7.2",
+        "contao/core-bundle": "^4.8"
+    },
+    "require-dev": {
+        "contao/manager-plugin": "^2.0"
+    },
+    "conflict": {
+        "contao/core": "*",
+        "contao/manager-plugin": "<2.0 || >=3.0"
+    },
+    "autoload": {
+        "psr-4": {
+            "MadeYourDay\\RockSolidIconPicker\\": "src/"
+        }
+    },
+    "extra": {
+        "contao-manager-plugin": "MadeYourDay\\RockSolidIconPicker\\ContaoManagerPlugin"
+    },
+    "replace": {
+        "contao-legacy/rocksolid-icon-picker": "self.version"
+    }
 }
